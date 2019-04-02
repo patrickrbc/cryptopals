@@ -9,29 +9,36 @@ const charFrequency = {
   q: 0.00095, z: 0.00074
 }
 
+var file    = fs.readFileSync('4.txt', 'utf-8')
+var lines   = file.split('\n')
+var results = []
+
+lines.forEach((line) => {
+  bruteForceSingleByteXOR(line)
+})
+
+console.log(results.reduce((x, y) => x.score > y.score ? x : y))
+
 function calculateFrequency (string) {
   return string.toLowerCase().split('')
     .reduce((sum, value) => sum + (charFrequency[value] || 0), 0)
 }
 
-var file           = fs.readFileSync('4.txt', 'utf-8')
-var lines          = file.split('\n')
-var frequenciesArr = []
-
-lines.forEach((line) => {
-  var buf = Buffer.from(line, 'hex')
-  var res = Buffer.alloc(buf.length)
+function bruteForceSingleByteXOR (msg) {
+  var msgBuffer  = Buffer.from(msg, 'hex')
+  var tempBuffer = Buffer.alloc(msgBuffer.length)
   
   for (let letter = 0, len = 256; letter < len; letter++) {
-    for (let i = 0, len = buf.length; i < len; i++)
-      res[i] = buf[i] ^ letter
+    for (let i = 0, len = msg.length; i < len; i++)
+      tempBuffer[i] = msgBuffer[i] ^ letter
 
-    msg = res.toString()
+    msg = tempBuffer.toString()
 
     if (!/[^\x00-\x7E]/g.test(msg) && /\s/.test(msg))
-      frequenciesArr.push([msg, calculateFrequency(msg)])
+      results.push({
+        message: msg, 
+        score: calculateFrequency(msg)
+      })
   }
-})
+}
 
-frequenciesArr.sort((a, b) => b[1] - a[1])
-console.log(frequenciesArr.shift());
