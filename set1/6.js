@@ -1,39 +1,110 @@
-
 const fs = require('fs')
 
 /* Source: http://www.oxfordmathcenter.com/drupal7/node/353 */
 const charFrequency = {
-  e: 0.12702, t: 0.09056, a: 0.08167, o: 0.07507, i: 0.06966, n: 0.06749,
-  s: 0.06327, h: 0.06094, r: 0.05987, d: 0.04253, l: 0.04025, c: 0.02782,
-  u: 0.02758, m: 0.02406, w: 0.02360, f: 0.02228, g: 0.02015, y: 0.01974,
-  p: 0.01929, b: 0.01492, v: 0.00978, k: 0.00772, j: 0.00153, x: 0.00150,
-  q: 0.00095, z: 0.00074
+  'e': 0.12702, 't': 0.09056, 'a': 0.08167, 'o': 0.07507, 'i': 0.06966,
+  'n': 0.06749, 's': 0.06327, 'h': 0.06094, 'r': 0.05987, 'd': 0.04253,
+  'l': 0.04025, 'c': 0.02782, 'u': 0.02758, 'm': 0.02406, 'w': 0.02360,
+  'f': 0.02228, 'g': 0.02015, 'y': 0.01974, 'p': 0.01929, 'b': 0.01492,
+  'v': 0.00978, 'k': 0.00772, 'j': 0.00153, 'x': 0.00150, 'q': 0.00095,
+  'z': 0.00074, ' ': 1
 }
 
-var results = []
-var file = new Buffer.from(fs.readFileSync('6.txt', 'utf-8'), 'base64')
+var keySize, blocks, file, fileDecoded
+var keyScores = []
 
-var KEYSIZE = findKeySize(file)
-console.log('KEYSIZE:', KEYSIZE)
+file = fs.readFileSync('6.txt', 'utf-8')
+fileDecoded = Buffer.from(file, 'base64')
 
-//possibleKeySizes.forEach((value) => {
+keySize = findKeySize(fileDecoded)
+blocks = transposeBlocks(divideInBlocks(fileDecoded, keySize), keySize)
+decrypt(findKey(blocks))
 
-  //var KEYSIZE = value.keysize
-  //var blocks = divideInBlocks(file, KEYSIZE)
-  //console.log(blocks);
+function decrypt (KEY) {
+  var buf = Buffer.alloc(fileDecoded.length)
 
-  ////var transposedBlocks = transposeBlocks(blocks, KEYSIZE)
-  ////console.log(transposedBlocks);
+  for (let i = 0, j = 0, len = fileDecoded.length; i < len; i++, j++)
+     buf[i] = fileDecoded[i] ^ KEY.charCodeAt(j % KEY.length)
 
-  ////transposedBlocks.forEach((block) => {
-    ////bruteForceSingleByteXOR(block)
-  ////})
+  console.log(buf.toString());
+}
 
-  //console.log('KEYSIZE:', KEYSIZE);
-  ////console.log(results.reduce((x, y) => x.score > y.score ? x : y))
-//})
+function findKey (transposedBlocks) {
+  var keys = []
+  transposedBlocks.forEach((block) => {
+    var a = bruteForceSingleByteXOR(block)
+    keys.push(a.key)
+  })
 
-//console.log(calculateDistance('this is a test','wokka wokka!!!'))
+  var KEY = ''
+  for (let i = 0, len = keys.length; i < len; i++)
+    KEY += String.fromCharCode(keys[i])
+
+  return KEY
+}
+
+function findKeySize (fileDecoded) {
+  var results = []
+  var res
+
+  for (let keySize = 2, len = 40; keySize <= len; keySize++) {
+    results.push({
+      keysize: keySize,
+      score: testKeySize(fileDecoded, keySize)
+    })
+  }
+
+  res = results.reduce((x, y) => x.score < y.score ? x : y)
+
+  return res.keysize
+}
+
+function divideInBlocks (msg, KEYSIZE) {
+  var blocks = []
+  for (let i = 0, len = Math.floor(msg.length/KEYSIZE); i < len; i++)
+    blocks.push(Buffer.from(msg).slice(i * KEYSIZE, (i * KEYSIZE) + KEYSIZE))
+  return blocks
+}
+
+function transposeBlocks (blocks) {
+  var transposedBlocks = []
+  var transposedBlockBuffer = Buffer.alloc(blocks.length)
+  var blockSize = blocks[0].length
+
+  for (let i = 0, len = blockSize; i < len; i++) {
+    for (let j = 0, len = blocks.length; j < len; j++) {
+      transposedBlockBuffer[j] = blocks[j][i]
+    }
+    transposedBlocks.push(Buffer.from(transposedBlockBuffer))
+  }
+
+  return transposedBlocks
+}
+
+// test a given key size to a msg and returns the score
+function testKeySize (msg, keySize) {
+  var possibleKeySizes = []
+
+  var firstHalf, secondHalf, distance
+  var nTestCases = 50
+  var score = 0
+
+  for (let i = 0, len = nTestCases; i < len; i++) {
+    firstHalf  = msg.slice(keySize * i, keySize * (i + 1))
+    secondHalf = msg.slice(keySize * (i + 2), keySize * (i + 3))
+    score += calculateDistance(firstHalf, secondHalf)
+  }
+
+  distance = score / (nTestCases* keySize)
+
+  possibleKeySizes.push({
+    keysize: keySize,
+    distance: distance
+  })
+
+  return possibleKeySizes
+    .reduce((x, y) => x.distance < y.distance ? x : y).distance
+}
 
 function calculateFrequency (string) {
   return string.toLowerCase().split('')
@@ -74,80 +145,26 @@ function calculateDistance (m1, m2) {
   return distance
 }
 
-function bruteForceSingleByteXOR (msg) {
-  var msgBuffer  = Buffer.from(msg, 'hex')
-  var tempBuffer = Buffer.alloc(msgBuffer.length)
+function bruteForceSingleByteXOR (msgBuffer) {
+  var tempBuffer, plainText
+  var results = []
   
   for (let letter = 0, len = 256; letter < len; letter++) {
-    for (let i = 0, len = msg.length; i < len; i++)
+
+    tempBuffer = Buffer.alloc(msgBuffer.length)
+
+    for (let i = 0, len = msgBuffer.length; i < len; i++)
       tempBuffer[i] = msgBuffer[i] ^ letter
 
-    msg = tempBuffer.toString()
+    plainText = tempBuffer.toString()
 
-    if (!/[^\x00-\x7E]/g.test(msg))
+    if (!/[^\x00-\x7E]/g.test(plainText))
       results.push({
-        message: msg, 
-        score: calculateFrequency(msg)
+        score: parseFloat(calculateFrequency(plainText).toFixed(6)),
+        key: letter,
+        message: plainText,
       })
   }
-}
 
-function findKeySize (msg) {
-  var possibleKeySizes = []
-  for (let i = 0, keySize = 2, len = 40; i < len; i++, keySize++) {
-
-    var blocks = divideInBlocks(file, keySize * 2)
-    var distance   = 0
-
-    blocks.forEach((block) => {
-      var pairs = divideInBlocks(block, keySize)
-      distance += calculateDistance(pairs[0], pairs[1])
-    })
-
-    //console.log(blocks, distance);
-    console.log(distance/keySize);
-
-    return keySize
-
-    var firstHalf  =  msg.slice(0, keySize - 1)
-    var secondHalf = msg.slice(keySize, keySize + keySize)
-
-    for (let i = 0, len = msg; i < len; i++) {
-    
-      calculateDistance(firstHalf, secondHalf)
-    }
-
-    possibleKeySizes.push({
-      keysize: keySize,
-      distance: distance / keySize
-    })
-  }
-
-  return possibleKeySizes
-    .reduce((x, y) => x.distance < y.distance ? x : y).keysize
-}
-
-function divideInBlocks (msg, KEYSIZE) {
-  var blocks = []
-  var arr = []
-  for (let i = 0, len = msg.length; i < len; i++) {
-    if (i % KEYSIZE === 0 && i > 0) {
-      blocks.push(arr.join(''))
-      arr = []
-    }
-    arr.push(msg[i].toString(16))
-  }
-  return blocks
-}
-
-function transposeBlocks (blocks, KEYSIZE) {
-  var transposedBlocks = []
-  for (let i = 0, len = KEYSIZE; i < len; i++) {
-    var newBlock = []
-    blocks.forEach((block) => {
-      newBlock.push(block[i])
-    })
-    transposedBlocks.push(newBlock.join(''))
-  }
-  return transposedBlocks
+  return results.sort((x, y) => (x.score < y.score) ? 1 : -1).shift()
 }
