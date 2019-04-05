@@ -1,3 +1,4 @@
+
 const fs     = require('fs')
 const assert = require('assert')
 const XOR    = require('../lib/xor')
@@ -34,7 +35,7 @@ function findKey (transposedBlocks) {
 
 function divideInBlocks (msg, KEYSIZE) {
   var blocks = []
-  for (let i = 0, len = Math.floor(msg.length/KEYSIZE); i < len; i++)
+  for (let i = 0, len = Math.floor(msg.length / KEYSIZE); i < len; i++)
     blocks.push(Buffer.from(msg).slice(i * KEYSIZE, (i * KEYSIZE) + KEYSIZE))
 
   return blocks
