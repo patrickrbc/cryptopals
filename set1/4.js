@@ -6,13 +6,16 @@ const Util   = require('../lib//util')
 
 var strings = fs.readFileSync('../res/4.txt', 'utf-8').split('\n')
 
-var decrypted = []
+var decrypted = [], result
 
-var result
+strings.forEach((string, index) => {
+  result = XOR.breakSingleByte(string)
 
-strings.forEach(string => {
-  var res = XOR.breakSingleByte(string)
-  if (res) decrypted.push(res)
+  if (result) {
+    result.string = string
+    result.line   = index + 1
+    decrypted.push(result)
+  }
 })
 
 result = decrypted.reduce((x, y) => x.score > y.score ? x : y)
