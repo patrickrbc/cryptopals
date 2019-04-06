@@ -30,7 +30,7 @@ function findKey (transposedBlocks) {
   for (let i = 0, len = keys.length; i < len; i++)
     KEY += String.fromCharCode(keys[i])
 
-  return KEY
+  return Buffer.from(KEY, 'ascii')
 }
 
 function divideInBlocks (msg, KEYSIZE) {

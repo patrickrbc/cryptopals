@@ -11,7 +11,7 @@ var decrypted = []
 var result
 
 strings.forEach(string => {
-  var res = XOR.breakSingle(string)
+  var res = XOR.breakSingleByte(string)
   if (res) decrypted.push(res)
 })
 
