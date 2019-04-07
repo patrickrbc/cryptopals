@@ -1,38 +1,27 @@
 
 const assert = require('assert')
 const fs     = require('fs')
+const Util   = require('../lib/util')
 
 var ciphertexts = fs.readFileSync('../res/8.txt', 'utf-8').split('\n')
 
 var results = []
 
 ciphertexts.forEach((ciphertext, index) => {
-  var cipherTextBlocks = divideInBlocks(ciphertext, 16)
+  var cipherTextBlocks = Util.divideInBlocks(ciphertext, 16)
 
   cipherTextBlocks.forEach((block, i) => {
     results.push({
       line: index + 1,
       ciphertext: ciphertext,
-      repetitions: countRepetitions(block, cipherTextBlocks)
+      repetitions: Util.countRepetitions(block, cipherTextBlocks)
     })
   })
 })
 
-console.log(results.sort((x, y) => x.repetitions > y.repetitions ? -1 : 1).shift())
+var result = results.reduce((x, y) => x.repetitions > y.repetitions ? x : y)
 
-function countRepetitions (block, cipherTextBlocks) {
-  var sum = 0
-  for (let i = 0, len = cipherTextBlocks.length; i < len; i++)
-    if (cipherTextBlocks[i] === block)
-      sum += 1
+assert.equal(result.line, 133)
+assert.equal(result.repetitions, 3)
 
-  return sum - 1
-}
-
-function divideInBlocks (msg, KEYSIZE) {
-  var blocks = []
-  for (let i = 0, len = Math.floor(msg.length / KEYSIZE); i < len; i++)
-    blocks.push(msg.slice(i * KEYSIZE, (i * KEYSIZE) + KEYSIZE))
-
-  return blocks
-}
+console.log(result)
