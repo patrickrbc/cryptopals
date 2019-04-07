@@ -20,6 +20,6 @@ strings.forEach((string, index) => {
 
 result = decrypted.reduce((x, y) => x.score > y.score ? x : y)
 
-assert.equal(result.message, 'Now that the party is jumping\n')
+assert.equal(result.msg, 'Now that the party is jumping\n')
 
 console.log(result)

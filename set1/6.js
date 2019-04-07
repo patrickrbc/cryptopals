@@ -22,7 +22,7 @@ console.log(result)
 function findKey (transposedBlocks) {
   var keys = []
   transposedBlocks.forEach((block) => {
-    var a = XOR.breakSingle(block)
+    var a = XOR.breakSingleByte(block)
     keys.push(a.key)
   })
 
