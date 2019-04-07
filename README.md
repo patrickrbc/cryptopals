@@ -1,5 +1,5 @@
 # Cryptopals
-This project contains the solutions for the Cryptopals challenges, available at https://cryptopals.com.
+This project contains the solutions, written in Node.js, for the Cryptopals challenges, available at https://cryptopals.com.
 
 ## License
  
