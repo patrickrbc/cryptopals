@@ -8,8 +8,8 @@ const key    = 'YELLOW SUBMARINE'
 
 var file = Buffer.from(fs.readFileSync('../res/7.txt', 'utf-8'), 'base64')
 
-var result = AES.decrypt(file, key)
+var result = AES.decrypt(file, key, 'aes-128-ecb')
 
 assert.equal(result.length, 2876)
 
-console.log(result);
+console.log(result)
